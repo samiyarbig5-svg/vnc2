@@ -1,44 +1,42 @@
-name: QEMU Win10 Installer (Tailscale Fix)
+name: QEMU Tailscale Fixed
 
 on: workflow_dispatch
 
 jobs:
-  run-win10:
-    runs-on: macos-13 # استفاده از مک برای شتاب‌دهنده HVF
+  run-win11:
+    runs-on: macos-13
     
     steps:
-    - name: Install QEMU & Tools
+    - name: Install QEMU
       run: brew install qemu
 
-    - name: Download Win10 ISO
-      # لینک مستقیم دانلود ISO را در خط زیر جایگزین کنید
+    - name: Download Win11 ISO
+      # لینک مستقیم دانلود ISO را اینجا بگذارید
       run: |
-        curl -L -o win10.iso "https://software.download.prss.microsoft.com/dbazure/Win10_22H2_English_x64v1.iso?t=ffce5336-faed-484a-b861-e5bac4aa7ce2&P1=1763870780&P2=601&P3=2&P4=IRpdUKm9LQwRWSIq316dWKr2kWRYMF8YO21JakDGx%2fWScV40ZsYIRthmqZfejGCjAdPREOtTZp4EoZjK4qrumvglRyChSnmnoTi5sOegB8TaJvI0s3aUCF5A%2bc2CV4EvzbAevrcyWm1YHlv5OudfMCTiFNA2xlGxKb3VXePYVcgwcgjmER41JRBOKCOsSRlA42c7MZ3BCYpJ1oWNNmJkPp05RhJJzoDP2yClWJhmMfRUsXqEmsizg63l6%2bdzeTy%2fkh1uXCwygLgGZYjtV%2f4Fvk6JO9qinsPhhUyIyVIeFrK3H5KxW7OAeelTCJRfaoJJDa3P6D4mEu0DB6%2bt5aQVnw%3d%3d"
+        curl -L -o win11.iso "https://software.download.prss.microsoft.com/dbazure/Win11_25H2_English_x64.iso?t=4680c4ce-b0ab-4c61-87e7-0df9bbd03422&P1=1763874804&P2=601&P3=2&P4=eG2bQk2alRkObmsUkNQL%2fxPCxY%2bl%2blRpgusDR8wSJXXPbfnH9t6zzT9hqkAGwTQjWlUHvKMrFoqlVh351E22VapPP36IftbxgF69GxDwb2Lx2zwD71lpyhF217zJ%2fu91E12c9a4W2uln%2bqW5gtbArOSFgfSsPp23094O7oe47L4EKQN9uLbxm066%2fpYUjKGKrbcRpsU18BXHGgHVwonX1AXH58hQ19lg7LI1pz%2bWJsKyw6KsPhfBzKqn5tCohA%2bntgi9Ddx5y2PyjqgEBcs%2fWBkqR6CQGekomOyiCZDdWJwoJR6c9d%2fvhyIaUGsehWeTrv1GlpUZYEKjE7elRlHOPQ%3d%3d"
 
     - name: Create Disk
       run: qemu-img create -f qcow2 windows.qcow2 40G
 
-    # --- شروع بخش تغییر کرده ---
-    - name: Setup Tailscale (Manual)
-    - run: |
+    - name: Setup Tailscale (Safe Mode)
+      # این روش امن‌ترین راه برای جلوگیری از ارور سینتکس است
+      env:
+        TS_KEY: ${{ secrets.TAILSCALE_AUTHKEY }}
+      run: |
         brew install tailscale
         sudo tailscaled > tailscaled.log 2>&1 &
-        sleep 10
-        sudo tailscale up --authkey="{{ secrets.TAILSCALE_AUTHKEY }}" --hostname="macos-win11-runner" --accept-routes
-    # --- پایان بخش تغییر کرده ---
-    - name: Get Tailscale IP
-      run: |
-        echo "Getting Tailscale IP..."
-        TS_IP=$(tailscale ip -4)
-        echo "-------------------------------------------------------"
-        echo "Connect VNC Viewer to this IP address:"
-        echo "Address: $TS_IP:5900"
-        echo "-------------------------------------------------------"
-        echo "::notice title=VNC Connection Info::Connect to $TS_IP:5900"
+        sleep 15
+        sudo tailscale up --authkey="$TS_KEY" --hostname="macos-win11-runner"
 
-    - name: Start VM (Installation Mode)
+    - name: Get Connection Info
       run: |
-        echo "Starting QEMU... Check the Notice for IP address."
+        TS_IP=$(tailscale ip -4)
+        echo "----------------------------------------"
+        echo "Connect VNC to: $TS_IP:5900"
+        echo "----------------------------------------"
+
+    - name: Start VM
+      run: |
         sudo qemu-system-x86_64 \
           -m 6G \
           -smp 4 \
@@ -50,3 +48,4 @@ jobs:
           -vga virtio \
           -display vnc=:0 \
           -usb -device usb-tablet
+          
