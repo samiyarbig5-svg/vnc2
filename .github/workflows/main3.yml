@@ -13,8 +13,7 @@ jobs:
 
     - name: Download Win11 ISO
       run: |
-        curl -L -o win11.iso "https://software.download.prss.microsoft.com/dbazure/Win11_25H2_English_x64.iso?t=4680c4ce-b0ab-4c61-87e7-0df9bbd03422&P1=1763874804&P2=601&P3=2&P4=eG2bQk2alRkObmsUkNQL%2fxPCxY%2bl%2blRpgusDR8wSJXXPbfnH9t6zzT9hqkAGwTQjWlUHvKMrFoqlVh351E22VapPP36IftbxgF69GxDwb2Lx2zwD71lpyhF217zJ%2fu91E12c9a4W2uln%2bqW5gtbArOSFgfSsPp23094O7oe47L4EKQN9uLbxm066%2fpYUjKGKrbcRpsU18BXHGgHVwonX1AXH58hQ19lg7LI1pz%2bWJsKyw6KsPhfBzKqn5tCohA%2bntgi9Ddx5y2PyjqgEBcs%2fWBkqR6CQGekomOyiCZDdWJwoJR6c9d%2fvhyIaUGsehWeTrv1GlpUZYEKjE7elRlHOPQ%3d%3d"
-
+        curl -L -o win11.iso "https://archive.org/download/mul_windows_7_enterprise_with_sp1_x64_dvd_u_677651-Archive/mul_windows_7_enterprise_jun_2024_x64_custom.iso"
     - name: Create Disk
       run: qemu-img create -f qcow2 windows.qcow2 40G
 
