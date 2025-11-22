@@ -13,7 +13,7 @@ jobs:
 
     - name: Download Win11 ISO
       run: |
-        curl -L -o win11.iso "https://archive.org/download/mul_windows_7_enterprise_with_sp1_x64_dvd_u_677651-Archive/mul_windows_7_enterprise_jun_2024_x64_custom.iso"
+        curl -L -o win11.iso "https://www.g2a.com/n/windows7sft?adid=AFI_GLOBAL_PB_DIGI_NGAM_DISPLAY_MIX_SOFTONIC&gtag=40e14661e6&id=1613&utm_source=SOFTONIC&utm_medium=affiliate_websites&utm_campaign=AFI_GLOBAL_PB_DIGI_NGAM_DISPLAY_MIX_SOFTONIC"
     - name: Create Disk
       run: qemu-img create -f qcow2 windows.qcow2 40G
 
