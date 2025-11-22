@@ -1,0 +1,54 @@
+name: QEMU Win10 Installer (Tailscale Fix)
+
+on: workflow_dispatch
+
+jobs:
+  run-win10:
+    runs-on: macos-13 # استفاده از مک برای شتاب‌دهنده HVF
+    
+    steps:
+    - name: Install QEMU & Tools
+      run: brew install qemu
+
+    - name: Download Win10 ISO
+      # لینک مستقیم دانلود ISO را در خط زیر جایگزین کنید
+      run: |
+        curl -L -o win10.iso "https://software.download.prss.microsoft.com/dbazure/Win10_22H2_English_x64v1.iso?t=ffce5336-faed-484a-b861-e5bac4aa7ce2&P1=1763870780&P2=601&P3=2&P4=IRpdUKm9LQwRWSIq316dWKr2kWRYMF8YO21JakDGx%2fWScV40ZsYIRthmqZfejGCjAdPREOtTZp4EoZjK4qrumvglRyChSnmnoTi5sOegB8TaJvI0s3aUCF5A%2bc2CV4EvzbAevrcyWm1YHlv5OudfMCTiFNA2xlGxKb3VXePYVcgwcgjmER41JRBOKCOsSRlA42c7MZ3BCYpJ1oWNNmJkPp05RhJJzoDP2yClWJhmMfRUsXqEmsizg63l6%2bdzeTy%2fkh1uXCwygLgGZYjtV%2f4Fvk6JO9qinsPhhUyIyVIeFrK3H5KxW7OAeelTCJRfaoJJDa3P6D4mEu0DB6%2bt5aQVnw%3d%3d"
+
+    - name: Create Disk
+      run: qemu-img create -f qcow2 windows.qcow2 40G
+
+    # --- شروع بخش تغییر کرده ---
+    - name: Setup Tailscale (Manual)
+    - run: |
+        brew install tailscale
+        sudo tailscaled > tailscaled.log 2>&1 &
+        sleep 10
+        # تغییرات: اضافه کردن مساوی و کوتیشن برای جلوگیری از ارور آرگومان
+        sudo tailscale up --authkey="${{ secrets.TAILSCALE_AUTHKEY }}" --hostname="macos-win11-runner" --accept-routes 
+       
+    # --- پایان بخش تغییر کرده ---
+    - name: Get Tailscale IP
+      run: |
+        echo "Getting Tailscale IP..."
+        TS_IP=$(tailscale ip -4)
+        echo "-------------------------------------------------------"
+        echo "Connect VNC Viewer to this IP address:"
+        echo "Address: $TS_IP:5900"
+        echo "-------------------------------------------------------"
+        echo "::notice title=VNC Connection Info::Connect to $TS_IP:5900"
+
+    - name: Start VM (Installation Mode)
+      run: |
+        echo "Starting QEMU... Check the Notice for IP address."
+        sudo qemu-system-x86_64 \
+          -m 6G \
+          -smp 4 \
+          -cpu host \
+          -accel hvf \
+          -drive file=windows.qcow2,if=virtio \
+          -cdrom win11.iso \
+          -boot d \
+          -vga virtio \
+          -display vnc=:0 \
+          -usb -device usb-tablet
