@@ -1,0 +1,65 @@
+name: QEMU Win10 Fast Boot
+on: workflow_dispatch
+
+jobs:
+  run-win10:
+    runs-on: macos-13
+    
+    steps:
+    - name: Install Dependencies
+      run: |
+        brew install qemu
+        brew install cloudflared
+
+    - name: Download Windows 10 ISO (Official Eval)
+      run: |
+        # دانلود ویندوز 10 نسخه Enterprise (لینک مستقیم مایکروسافت)
+        curl -L -o win10.iso "https://go.microsoft.com/fwlink/p/?LinkID=2195166&clcid=0x409&culture=en-us&country=US"
+
+    - name: Create Disk
+      run: qemu-img create -f qcow2 windows.qcow2 40G
+
+    - name: Setup noVNC
+      run: |
+        git clone https://github.com/novnc/noVNC.git
+        git clone https://github.com/novnc/websockify noVNC/utils/websockify
+        ./noVNC/utils/novnc_proxy --vnc localhost:5900 --listen 6080 > novnc.log 2>&1 &
+
+    - name: Start VM (Win10 Optimized)
+      # استفاده از machine type q35 برای پایداری بیشتر
+      # -vga std برای سرعت بیشتر
+      run: |
+        sudo qemu-system-x86_64 \
+          -m 6G \
+          -smp 4 \
+          -cpu host \
+          -machine q35 \
+          -accel hvf \
+          -drive file=windows.qcow2,if=virtio \
+          -cdrom win10.iso \
+          -boot order=d \
+          -vga std \
+          -display vnc=:0,lossy=on \
+          -usb -device usb-tablet \
+          -daemonize
+
+    - name: Start Cloudflare Tunnel
+      run: |
+        cloudflared tunnel --url http://localhost:6080 > tunnel.log 2>&1 &
+        sleep 10
+
+    - name: Get Control Link
+      run: |
+        TUNNEL_URL=$(grep -o 'https://.*\.trycloudflare.com' tunnel.log | head -n 1)
+        echo "----------------------------------------"
+        echo "YOUR CONTROL LINK:"
+        echo "$TUNNEL_URL/vnc.html?autoconnect=true&quality=5"
+        echo "----------------------------------------"
+        echo "⚠️ IMPORTANT: If screen is black or stuck:"
+        echo "1. Open the sidebar in noVNC."
+        echo "2. Click the Power button icon."
+        echo "3. Click 'Reset'."
+        echo "4. Immediately tap any key on your keyboard!"
+        echo "----------------------------------------"
+        while true; do sleep 30; done
+        
