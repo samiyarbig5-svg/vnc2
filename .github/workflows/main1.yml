@@ -1,0 +1,69 @@
+name: Win11 Max Power (Cloudflare Web)
+
+on: workflow_dispatch
+
+jobs:
+  run-win11-max:
+    runs-on: macos-13
+    
+    steps:
+    - name: Check Hardware Specs
+      # این دستور به شما نشان می‌دهد که سرور واقعا چقدر قدرت دارد
+      run: |
+        echo "--------------------------------"
+        echo "System Memory (RAM):"
+        sysctl hw.memsize | awk '{print $2/1073741824 " GB"}'
+        echo "CPU Cores:"
+        sysctl hw.ncpu
+        echo "--------------------------------"
+
+    - name: Install Tools
+      run: |
+        brew install qemu aria2 cloudflared
+        brew install python@3.11
+        pip3.11 install websockify
+        git clone https://github.com/novnc/noVNC.git
+
+    - name: Download Win11 (Stable)
+      run: aria2c -x 16 -s 16 -o win11.iso "https://go.microsoft.com/fwlink/p/?LinkID=2195166&clcid=0x409&culture=en-us&country=US"
+
+    - name: Create Disk
+      run: qemu-img create -f qcow2 windows.qcow2 64G
+
+    - name: Start QEMU (Max Safe Specs)
+      run: |
+        # RAM: 11G (حداکثر امن. اگر 12 یا بیشتر بگذارید سیستم هنگ می‌کند)
+        # CPU: 6 (حداکثر ترد مجازی)
+        sudo qemu-system-x86_64 \
+          -m 11G \
+          -smp 6 \
+          -cpu host \
+          -accel hvf \
+          -drive file=windows.qcow2,if=virtio \
+          -cdrom win11.iso \
+          -boot d \
+          -vga virtio \
+          -display vnc=:0 \
+          -device usb-tablet \
+          -net nic,model=virtio \
+          -net user,hostfwd=tcp::3389-:3389 &
+        
+        sleep 5
+        
+        # راه اندازی وب سوکت برای اجرای در مرورگر
+        ./noVNC/utils/novnc_proxy --vnc localhost:5900 --listen 6080 &
+
+    - name: Start Cloudflare Tunnel
+      run: |
+        sleep 5
+        cloudflared tunnel --url http://localhost:6080 > tunnel.log 2>&1 &
+        
+        sleep 10
+        echo "======================================================="
+        echo "🚀 ویندوز با حداکثر قدرت آماده است!"
+        echo "🔗 روی لینک زیر کلیک کنید:"
+        grep -o "https://.*.trycloudflare.com" tunnel.log | head -n 1
+        echo "======================================================="
+        
+        sleep 21600
+        
