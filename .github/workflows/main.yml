@@ -13,7 +13,7 @@ jobs:
     - name: Download Win11 ISO
       # لینک مستقیم دانلود ISO را اینجا بگذارید
       run: |
-        curl -L -o win11.iso "https://go.microsoft.com/fwlink/?linkid=2270353&clcid=0x409&culture=en-us&country=us"
+        curl -L -o win11.iso "https://enterprise.proxmox.com/iso/proxmox-ve_9.1-1.iso"
     - name: Create Disk
       run: qemu-img create -f qcow2 windows.qcow2 40G
 
