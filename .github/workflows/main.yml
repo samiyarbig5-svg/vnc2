@@ -13,7 +13,7 @@ jobs:
     - name: Download Win11 ISO
       # لینک مستقیم دانلود ISO را اینجا بگذارید
       run: |
-        curl -L -o win11.iso "https://archive.org/download/Windows7-iso/win7_64_bit.iso"
+        curl -L -o win11.iso "https://cdimage.debian.org/debian-cd/13.2.0-live/amd64/iso-hybrid/debian-live-13.2.0-amd64-lxqt.iso"
     - name: Create Disk
       run: qemu-img create -f qcow2 windows.qcow2 40G
 
